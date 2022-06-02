@@ -4,6 +4,7 @@ mod plugin;
 
 use bevy::{
     ecs::archetype::Archetype,
+    ptr::Ptr,
     reflect::TypeRegistration,
     render::camera::{Camera2d, Camera3d},
     window::WindowId,
@@ -15,7 +16,7 @@ use bevy::{
     ecs::{
         component::{ComponentId, ComponentTicks, StorageType},
         entity::EntityLocation,
-        query::{FilterFetch, WorldQuery},
+        query::WorldQuery,
         world::EntityRef,
     },
     prelude::*,
@@ -25,7 +26,10 @@ use bevy::{
 use bevy_egui::egui::{self, Color32};
 use egui::{epaint::FontId, CollapsingHeader};
 use pretty_type_name::pretty_type_name_str;
-use std::{any::TypeId, cell::Cell};
+use std::{
+    any::TypeId,
+    cell::{Cell, UnsafeCell},
+};
 
 use crate::{utils::ui::label_button, Context};
 use impls::EntityAttributes;
@@ -141,7 +145,6 @@ impl<'a> WorldUIContext<'a> {
     pub fn world_ui<F>(&mut self, ui: &mut egui::Ui, params: &mut WorldInspectorParams) -> bool
     where
         F: WorldQuery,
-        F::Fetch: FilterFetch,
     {
         let mut root_entities = self.world.query_filtered::<Entity, (Without<Parent>, F)>();
 
@@ -355,7 +358,7 @@ impl<'a> WorldUIContext<'a> {
         let (component_ptr, component_ticks) = {
             let (ptr, ticks) =
                 get_component_and_ticks(self.world, component_id, entity, entity_location).unwrap();
-            (ptr, { &mut *ticks })
+            (ptr.as_ptr(), { &mut *ticks.get() })
         };
 
         if params.highlight_changes
@@ -577,7 +580,7 @@ unsafe fn get_component_and_ticks(
     component_id: ComponentId,
     entity: Entity,
     location: EntityLocation,
-) -> Option<(*mut u8, *mut ComponentTicks)> {
+) -> Option<(Ptr<'_>, &UnsafeCell<ComponentTicks>)> {
     let archetype = &world.archetypes()[location.archetype_id];
     let component_info = world.components().get_info_unchecked(component_id);
     match component_info.storage_type() {
@@ -588,7 +591,7 @@ unsafe fn get_component_and_ticks(
             // SAFE: archetypes only store valid table_rows and the stored component type is T
             Some((
                 components.get_data_unchecked(table_row),
-                components.get_ticks_mut_ptr_unchecked(table_row),
+                components.get_ticks_unchecked(table_row),
             ))
         }
         StorageType::SparseSet => world

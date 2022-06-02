@@ -1,7 +1,7 @@
 use std::ops::{Deref, DerefMut};
 
 use bevy::prelude::*;
-use bevy::reflect::{List, Map, Tuple};
+use bevy::reflect::{Array, List, Map, Tuple};
 use bevy_egui::egui;
 use egui::Grid;
 
@@ -114,6 +114,9 @@ pub fn ui_for_reflect_with_registry(
         }
         bevy::reflect::ReflectMut::List(value) => {
             ui_for_list(value, ui, context, inspectable_registry)
+        }
+        bevy::reflect::ReflectMut::Array(value) => {
+            ui_for_array(value, ui, context, inspectable_registry)
         }
         bevy::reflect::ReflectMut::Map(value) => ui_for_map(value, ui),
         bevy::reflect::ReflectMut::Value(value) => {
@@ -248,6 +251,45 @@ fn ui_for_list(
                     changed = true;
                 }
             });
+        }
+
+        /*if let Some(_) = to_delete {
+            changed = true;
+        }*/
+    });
+
+    changed
+}
+
+fn ui_for_array(
+    array: &mut dyn Array,
+    ui: &mut egui::Ui,
+    context: &mut Context,
+    inspectable_registry: Option<&InspectableRegistry>,
+) -> bool {
+    let mut changed = false;
+
+    ui.vertical(|ui| {
+        // let mut to_delete = None;
+
+        let len = array.len();
+        for i in 0..len {
+            let val = array.get_mut(i).unwrap();
+            ui.horizontal(|ui| {
+                /*if utils::ui::label_button(ui, "✖", egui::Color32::RED) {
+                    to_delete = Some(i);
+                }*/
+                changed |= ui_for_reflect_with_registry(
+                    val,
+                    ui,
+                    &mut context.with_id(i as u64),
+                    inspectable_registry,
+                );
+            });
+
+            if i != len - 1 {
+                ui.separator();
+            }
         }
 
         /*if let Some(_) = to_delete {
