@@ -100,14 +100,14 @@ impl<Q, F> Default for InspectorQuery<Q, F> {
     }
 }
 
-type WorldQueryItem<'w, 's, Q> = <<Q as WorldQueryGats<'w>>::Fetch as Fetch<'w>>::Item;
+type WorldQueryItem<'w, Q> = <<Q as WorldQueryGats<'w>>::Fetch as Fetch<'w>>::Item;
 
-unsafe fn extend_lifetime<'w, 's, Q>(
-    item: &<WorldQueryItem<'static, 'static, Q> as Inspectable>::Attributes,
-) -> <WorldQueryItem<'w, 's, Q> as Inspectable>::Attributes
+unsafe fn extend_lifetime<'w, Q>(
+    item: &<WorldQueryItem<'static, Q> as Inspectable>::Attributes,
+) -> <WorldQueryItem<'w, Q> as Inspectable>::Attributes
 where
     Q: WorldQuery,
-    for<'world, 'state> WorldQueryItem<'world, 'state, Q>: Inspectable,
+    for<'world, 'state> WorldQueryItem<'world, Q>: Inspectable,
 {
     std::mem::transmute_copy(item)
 }
@@ -116,9 +116,9 @@ impl<Q: 'static, F: 'static> Inspectable for InspectorQuery<Q, F>
 where
     Q: WorldQuery,
     F: WorldQuery,
-    for<'w, 's> WorldQueryItem<'w, 's, Q>: Inspectable,
+    for<'w> WorldQueryItem<'w, Q>: Inspectable,
 {
-    type Attributes = <WorldQueryItem<'static, 'static, Q> as Inspectable>::Attributes;
+    type Attributes = <WorldQueryItem<'static, Q> as Inspectable>::Attributes;
 
     fn ui(
         &mut self,
@@ -187,9 +187,9 @@ impl<Q, F> Inspectable for InspectorQuerySingle<Q, F>
 where
     Q: WorldQuery + 'static,
     F: WorldQuery + 'static,
-    for<'w, 's> WorldQueryItem<'w, 's, Q>: Inspectable,
+    for<'w> WorldQueryItem<'w, Q>: Inspectable,
 {
-    type Attributes = <WorldQueryItem<'static, 'static, Q> as Inspectable>::Attributes;
+    type Attributes = <WorldQueryItem<'static, Q> as Inspectable>::Attributes;
 
     fn ui(
         &mut self,
