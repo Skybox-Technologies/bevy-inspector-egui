@@ -156,7 +156,7 @@ impl Default for InspectableRegistry {
         }
 
         this.register::<PrimitiveTopology>();
-        this.register::<bevy::render::view::RenderLayers>();
+        this.register::<bevy::render::view::RenderLayer>();
 
         this.register::<WindowOrigin>();
         this.register::<ScalingMode>();
