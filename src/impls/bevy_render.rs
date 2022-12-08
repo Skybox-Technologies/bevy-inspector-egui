@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::render::primitives::{CubemapFrusta, Frustum, Plane};
 use bevy::render::render_resource::ShaderImport;
-use bevy::render::view::RenderLayers;
+use bevy::render::view::RenderLayer;
 use bevy::render::{
     camera::{ScalingMode, WindowOrigin},
     mesh::{Indices, PrimitiveTopology},
@@ -9,7 +9,7 @@ use bevy::render::{
 };
 use bevy_egui::egui::{self, Grid, RichText};
 
-use crate::{utils, Context, Inspectable};
+use crate::{Context, Inspectable};
 
 use super::NumberAttributes;
 
@@ -304,51 +304,7 @@ impl Inspectable for Plane {
     }
 }
 
-impl Inspectable for RenderLayers {
-    type Attributes = ();
-
-    fn ui(&mut self, ui: &mut egui::Ui, _: Self::Attributes, context: &mut Context) -> bool {
-        let mut to_delete = None;
-
-        let mut changed = false;
-        for layer in self.iter() {
-            ui.horizontal(|ui| {
-                if utils::ui::label_button(ui, "✖", egui::Color32::RED) {
-                    to_delete = Some(layer);
-                }
-                ui.label(layer.to_string());
-            });
-        }
-
-        ui.horizontal(|ui| {
-            let id = context.id();
-            let mut new_layer: u8 = *ui
-                .memory()
-                .data
-                .get_temp_mut_or_insert_with(id, || self.iter().next().map_or(0, |val| val + 1));
-
-            if utils::ui::label_button(ui, "+", egui::Color32::GREEN) {
-                *self = self.with(new_layer);
-                changed = true;
-            }
-
-            if new_layer.ui(
-                ui,
-                NumberAttributes::default().with_max(RenderLayers::TOTAL_LAYERS as u8 - 1),
-                context,
-            ) {
-                ui.memory().data.insert_temp(id, new_layer);
-            }
-        });
-
-        if let Some(to_remove) = to_delete {
-            *self = self.without(to_remove);
-            changed = true;
-        }
-
-        changed
-    }
-}
+impl_for_struct_delegate_fields!(RenderLayer: layer);
 
 impl Inspectable for Shader {
     type Attributes = ();
